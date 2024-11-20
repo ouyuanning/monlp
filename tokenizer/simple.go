@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+	"unsafe"
 )
 
 const (
@@ -147,10 +148,10 @@ func (t *SimpleTokenizer) outputLatin(pos int, yield func(Token) bool) {
 		}
 	}
 
-	ls := strings.ToLower(string(bs))
+	ls := strings.ToLower(Bytes2String(bs))
 	token := Token{}
 	token.TokenBytes[0] = byte(len(ls))
-	copy(token.TokenBytes[1:], []byte(ls))
+	copy(token.TokenBytes[1:], String2Bytes(ls))
 	token.TokenPos = int32(t.currTokenPos)
 	token.BytePos = int32(t.begin)
 	if !yield(token) {
@@ -198,7 +199,7 @@ func (t *SimpleTokenizer) Tokenize() iter.Seq[Token] {
 
 		h := beginToken
 
-		for pos, rune := range string(t.input) {
+		for pos, rune := range Bytes2String(t.input) {
 			if t.Done {
 				return
 			}
@@ -212,4 +213,12 @@ func (t *SimpleTokenizer) Tokenize() iter.Seq[Token] {
 		// send a space to output last token
 		h(t, len(t.input), ' ', yield)
 	}
+}
+
+func String2Bytes(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&s))
+}
+
+func Bytes2String(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
 }
